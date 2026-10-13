@@ -15,7 +15,6 @@ body:
 
 options:
   columns: 3
-  can_close_with_escape: true
   pause: false
   after_action: close
   # The exit button is a full button mapping, but it has no id requirements of its own

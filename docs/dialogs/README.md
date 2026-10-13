@@ -56,7 +56,7 @@ plugins/DeluxeMenus/
 
 ### Example dialogs are installed on a fresh server
 
-On the very first start, when `gui_dialogs` does not exist yet, DeluxeMenus writes four example
+On the very first start, when `gui_dialogs` does not exist yet, DeluxeMenus writes six example
 dialogs into it — the same way the bundled example menus are written into `gui_menus`:
 
 | File | Dialog id | Type | Demonstrates |
@@ -66,14 +66,14 @@ dialogs into it — the same way the bundled example menus are written into `gui
 | `server_selector.yml` | `server_selector` | `multi_action` | `columns`, `exit_button`, `player_command`, `console_command`, and `open_dialog` linking to another dialog |
 | `feedback_form.yml` | `feedback_form` | `form` | All four input controls, `required`/`min_length`, `{input_id}` in actions, and `open_requirements` |
 | `command_example.yml` | `command_example` | `multi_action` | `open_command` registering `/dmexample` with the alias `/dme` |
-| `live_stats.yml` | `live_stats` | `multi_action` | `refresh_interval` auto-refresh, the `[refresh]` action, and `[close]` |
+| `live_stats.yml` | `live_stats` | `multi_action` | Updating a dialog on demand with the `[refresh]` action, plus `[close]` |
 
 Notes:
 
 * This happens **once**, only when the directory is absent. Renaming or deleting an example is
   permanent — it is never restored.
 * Files are written with "do not replace", so an example can never overwrite a file of your own.
-* They are ordinary dialogs: edit them, or delete all four and start from scratch.
+* They are ordinary dialogs: edit them, or delete all six and start from scratch.
 * `feedback_form` is the only one that is restricted, because it demonstrates `open_requirements`.
   It requires `deluxemenus.dialog.feedback`; operators bypass Bukkit permission checks and can always
   open it. Remove the `open_requirements` block (or grant the node) to open it for everyone else.
@@ -82,9 +82,9 @@ Notes:
 * `command_example` registers the command `/dmexample` (alias `/dme`). If that name is already taken
   on your server the command is skipped with a warning and the dialog stays reachable through
   `/dm dialog open command_example`.
-* `live_stats` refreshes itself every 2 seconds, so it costs a re-render per player per interval.
-  Delete it if you do not want a timer running by default; it exists to show the feature. See
-  section 10 for the caveats that come with refreshing.
+* `live_stats` updates itself when its **Refresh** button is pressed and leaves escape working.
+  No timer runs for it, so it costs nothing while it is open. See section 10 for how to add a timer,
+  and for what that costs.
 
 ### Identity rules
 
@@ -121,13 +121,15 @@ placeholders. Placeholders are resolved against the **viewer**.
 
 | Key | Type | Default | Applies to | Meaning |
 |---|---|---|---|---|
-| `can_close_with_escape` | boolean | `true` | all | Whether Escape dismisses the dialog |
 | `pause` | boolean | `false` | all | Pause the game while open (single-player only) |
 | `after_action` | `close` \| `none` \| `wait_for_response` | `close` | all | What the client does after dismissal |
 | `columns` | 1–1024 | `2` | `multi_action`, `form` | Button grid columns |
-| `refresh_interval` | 0–86400 | `0` | all | Seconds between automatic re-renders; `0` disables. See section 10. |
-| `refresh_max_seconds` | 1–86400 | `300` | all | How long a refresh session may run without interaction. See section 10. |
+| `refresh_interval` | 0–86400 | `0` | all | Seconds between automatic re-renders; `0` disables. **Setting this turns escape off for the dialog** — the two are one decision, not two options. See section 10. |
+| `refresh_max_seconds` | 1–86400 | `300` | all | Safety bound on how long a refresh session may run without interaction. See section 10. |
 | `exit_button` | button mapping | none | `multi_action`, `form` | Extra button rendered outside the grid |
+
+Escape is **not** an option. It is on for every dialog that has no `refresh_interval`, and off for
+every dialog that has one, because a timer cannot coexist with it (section 10).
 
 `exit_button` is a full button mapping (`id`, `label`, `tooltip`, `width`, `actions`). It is ignored,
 with a warning, for `notice` and `confirmation`.
@@ -426,71 +428,100 @@ many times the player clicks.
 
 ---
 
-## 10. Automatic refresh
+## 10. Refreshing a dialog
 
-A dialog can re-render itself on a timer so its placeholders keep updating while the player looks at
-it:
+A dialog **cannot be updated in place** — the native API only offers "show this dialog". Updating one
+therefore means re-rendering it with freshly resolved placeholders and sending it again. There are
+exactly two ways to trigger that, and they are mutually exclusive in a way described below.
+
+### Refresh on demand (recommended)
+
+The `refresh` action re-renders and re-sends the dialog the player is currently in:
 
 ```yaml
 id: live_stats
 type: multi_action
 title: "&aYour stats"
-options:
-  refresh_interval: 2       # re-render every 2 seconds; 0 (the default) disables refresh
-  refresh_max_seconds: 300  # stop refreshing after 5 minutes with no interaction
 body:
   - type: text
     content: "&7Health: &c%player_health%&7/&c%player_max_health%"
 buttons:
   - id: refresh_now
-    label: "&bRefresh now"
+    label: "&bRefresh"
+    width: 150
     actions:
-      - type: refresh        # the same refresh, on demand
+      - type: refresh        # re-render and re-send, right now
   - id: close
     label: "&7Close"
+    width: 150
     actions:
       - type: close          # in a dialog, [close] dismisses the dialog
 ```
 
-| Key | Type | Default | Meaning |
-|---|---|---|---|
-| `options.refresh_interval` | 0–86400 | `0` | Seconds between refreshes. `0` renders once and never refreshes. |
-| `options.refresh_max_seconds` | 1–86400 | `300` | How long a session keeps refreshing with no interaction. Must be at least `refresh_interval`. |
+This is what the shipped `live_stats.yml` does. It needs no options at all, and it has no caveats:
 
-### How it works, and what it costs
-
-A dialog **cannot be updated in place** — the native API only offers "show this dialog". Refreshing
-therefore re-renders the dialog with freshly resolved placeholders and re-sends it, which has two
-consequences worth understanding before you turn it on:
-
-1. **Anything the viewer has typed is cleared.** Refreshing is for dialogs that *display* live data,
-   not for forms. The loader warns if a dialog sets `refresh_interval` and also declares inputs.
-2. **A dialog cannot know when it was closed.** Minecraft only sends the server a packet when a
-   button is pressed; dismissing a dialog with escape is invisible to the server. `refresh_max_seconds`
-   is therefore a hard limit — a session stops refreshing once it elapses, which is the only thing
-   preventing a dialog the player already dismissed from being re-sent. Refreshing also stops as soon
-   as the player presses any button, when they quit, or when `/dm reload` replaces the definition.
+* It is driven by a real button press, so the server knows the player is still there. The press is
+  also what makes the click visible to the server in the first place.
+* Escape keeps working, and nothing re-opens the dialog after the player presses it.
+* It runs immediately, so `delay` and `chance` do not apply to it.
 
 A dialog opened with `-p:<player>` keeps resolving its placeholders against that player on every
 refresh.
 
-### The `refresh` action
-
-`[refresh]` re-renders and re-sends the dialog the player is currently in. It runs immediately, so
-`delay` and `chance` do not apply to it. Unlike the timer, it is driven by a real button press, and
-pressing it restarts the session's lifetime — so a "Refresh now" button gives players live data
-without relying on a timer at all, and without the escape caveat above.
-
 Inside a **menu**, `[refresh]` keeps its original meaning: it re-evaluates the menu's placeholders and
 requirements. The dialog behaviour only applies inside a dialog.
+
+### A refresh timer (turns escape off)
+
+A timer re-renders on an interval, without the player doing anything:
+
+```yaml
+options:
+  refresh_interval: 2      # re-render every 2 seconds; 0 (the default) disables the timer. This
+                           # single line also turns escape off for this dialog.
+  refresh_max_seconds: 300 # safety bound: stop after 5 minutes with no interaction
+```
+
+| Key | Type | Default | Meaning |
+|---|---|---|---|
+| `options.refresh_interval` | 0–86400 | `0` | Seconds between refreshes. `0` renders once and never refreshes. Setting it turns escape off. |
+| `options.refresh_max_seconds` | 1–86400 | `300` | Safety bound on how long a session keeps refreshing with no interaction. Must be at least `refresh_interval`. |
+
+**A timer cannot coexist with escape, and this is not a plugin limitation you can work around.**
+Minecraft never tells the server that a dialog was dismissed: there is no dialog close event, no
+packet, and a dialog is not a container, so pressing escape produces *nothing* at all on the server.
+The only packet a dialog ever produces is a button press. A blind timer would therefore keep
+re-opening a dialog the player had already escaped from, every interval, for as long as
+`refresh_max_seconds` allowed — and escape could never get rid of it.
+
+So the two are a single decision, expressed by a single key. Setting `refresh_interval` is what turns
+escape off; there is no separate flag to set, and therefore no way for the two to contradict each
+other. A dialog with a timer has no invisible exit, which is exactly the condition the timer needs to
+be safe: every way it can end is something the server observes.
+
+A timer stops as soon as the player presses any button, opens any inventory (a menu, another plugin's
+GUI, a chest — anything that replaces the screen), quits, dies, respawns, changes world, or when
+`/dm reload` replaces the definition. Those are every route by which a dialog can disappear that the
+server can actually observe.
+
+Because escape is off in timer mode, a refreshing dialog **must** offer a button to leave by. Every
+dialog type requires at least one button, so that is structural rather than something you have to
+remember.
+
+### What both forms share
+
+Anything the viewer has typed is cleared, because a refresh re-sends the whole dialog. Refreshing is
+for dialogs that *display* live data, not for forms. The loader warns if a dialog refreshes and also
+declares inputs.
 
 ### Callback lifetime
 
 Every render registers one callback per button with Paper, and each callback carries a lifetime. For a
-refreshing dialog that lifetime is tied to the refresh interval (the interval plus ten seconds, never
-below thirty), so a superseded generation expires shortly after the next one replaces it. The number
-of live callbacks therefore stays proportional to the number of open dialogs rather than to the number
-of refreshes.
+dialog that re-renders on a timer that lifetime is tied to the refresh interval (the interval plus ten
+seconds, never below thirty), so a superseded generation expires shortly after the next one replaces
+it. The number of live callbacks therefore stays proportional to the number of open dialogs rather
+than to the number of refreshes. Press-driven refreshes create far fewer generations — one per click
+— so they keep the ordinary one-hour lifetime.
 
 ---
 
@@ -654,10 +685,16 @@ Severities:
 | `error` | The file is not loaded. Everything else still loads. |
 | `warning` | The file loads; the noted key is ignored or has a caveat. |
 
+Errors are emitted for anything that stops a file loading: missing or malformed required fields,
+unknown types, an out of range value, an unknown action, a requirement block that cannot be parsed, and
+the one combination that cannot work — `refresh_max_seconds` shorter than `refresh_interval`
+(section 10).
+
 Warnings are emitted for: an `inputs` block on a non-form type, an `exit_button` on `notice`/
 `confirmation`, `max_lines`/`height` without `multiline`, a dialog that both refreshes and collects
-input (refreshing clears what the viewer typed), an `open_dialog` target that is not loaded, and a
-button that validates inputs without reading any of them (which is a cancel button missing
+input (refreshing clears what the viewer typed), a leftover `can_close_with_escape` key (removed —
+escape now follows `refresh_interval`), an `open_dialog` target that is not loaded, and a button that
+validates inputs without reading any of them (which is a cancel button missing
 `validate_inputs: false`).
 
 ---
@@ -684,11 +721,14 @@ These are deliberate and are stated rather than silently worked around:
 1. **Minimum 1.21.7.** Native dialogs do not exist below that version, and DeluxeMenus disables itself.
 2. **No `dialog_list` / `server_links` config types.** See section 4 for the reason.
 3. **Text bodies only.** Item bodies (`ItemDialogBody`) are not exposed as YAML yet.
-4. **A refresh loop cannot detect a dismissed dialog.** Minecraft only reports button presses, so a
-   dialog the player closes with escape keeps refreshing until `refresh_max_seconds` elapses, at which
-   point it may be re-sent once more. Keep `refresh_max_seconds` short for dialogs the player is
-   likely to dismiss quickly, or drive refreshes from a "Refresh now" button instead of the timer —
-   see section 10.
+4. **A dismissed dialog cannot be detected, so escape and a refresh timer are mutually exclusive.**
+   The only packet a dialog produces is a button press; there is no close event, no close packet, and
+   a dialog is not a container, so pressing escape reaches the server as nothing at all. A timer
+   therefore cannot know the dialog is gone and would keep re-opening it. The two are expressed as one
+   decision rather than two options: `refresh_interval` is what turns escape off, so nothing can be
+   configured into an inconsistent state and `can_close_with_escape` no longer exists as a key. To
+   keep escape and still update a dialog, drive updates from a `[refresh]` button instead of a timer.
+   See section 10.
 5. **`required` and `min_length` are validated on submission, not by the client.** Paper lets a form be
    submitted with an empty optional-looking field, so the server re-checks and, on failure, explains
    the problem and re-opens a freshly bound dialog so the player can correct it. Input values are not

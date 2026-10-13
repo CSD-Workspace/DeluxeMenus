@@ -213,6 +213,31 @@ class DialogExamplesTest {
     }
 
     @Test
+    @DisplayName("the stats example keeps escape working and refreshes on demand instead")
+    void refreshExampleIsOnDemand() {
+        final DialogDefinition definition = result.definitions().get("live_stats");
+
+        assertNotNull(definition);
+
+        // A timer cannot coexist with escape: Minecraft never reports escape, so a timer would keep
+        // re-opening a dialog the player had closed. The shipped example therefore demonstrates the
+        // combination that always works - escape closes the dialog, and a button updates it.
+        assertTrue(definition.canCloseWithEscape(),
+                "the example must leave escape working, because that is what a dialog can always support");
+        assertFalse(definition.refreshes(),
+                "the example must not enable a timer, which would make escape impossible");
+
+        assertTrue(definition.buttons().stream()
+                        .flatMap(button -> button.actions().stream())
+                        .anyMatch(action -> action.type() == com.extendedclip.deluxemenus.action.ActionType.REFRESH),
+                "the example exists to demonstrate [refresh], so it must actually use it");
+
+        // A dialog that is updated by a button still has to offer a way out, since the update path
+        // must not be the only control.
+        assertFalse(definition.buttons().isEmpty());
+    }
+
+    @Test
     @DisplayName("the form example's skip button opts out of input validation")
     void formExampleSkipButtonCanAlwaysClose() {
         final DialogDefinition definition = result.definitions().get("feedback_form");

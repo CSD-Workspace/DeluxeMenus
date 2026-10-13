@@ -32,7 +32,6 @@ body:
 
 options:
   columns: 2
-  can_close_with_escape: true
 
 buttons:
   - id: understand

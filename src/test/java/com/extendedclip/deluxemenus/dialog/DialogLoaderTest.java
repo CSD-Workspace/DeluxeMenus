@@ -233,7 +233,7 @@ class DialogLoaderTest {
         }
 
         @Test
-        @DisplayName("options control escape, pause, after_action, columns and the exit button")
+        @DisplayName("options control pause, after_action, columns and the exit button")
         void parsesOptions() {
             final DialogDiagnostics diagnostics = new DialogDiagnostics();
             final DialogDefinition definition = loader().parse(yaml("""
@@ -241,7 +241,6 @@ class DialogLoaderTest {
                     type: multi_action
                     title: "Where to?"
                     options:
-                      can_close_with_escape: false
                       pause: true
                       after_action: none
                       columns: 3
@@ -256,13 +255,45 @@ class DialogLoaderTest {
                     """), "travel.yml", diagnostics);
 
             assertNotNull(definition, () -> "expected a definition, got: " + diagnostics.all());
-            assertFalse(definition.canCloseWithEscape());
+            // No refresh_interval, so escape is on. It is not a configurable option any more.
+            assertTrue(definition.canCloseWithEscape());
             assertTrue(definition.pause());
             assertEquals(DialogDefinition.AfterAction.NONE, definition.afterAction());
             assertEquals(3, definition.columns());
             assertNotNull(definition.exitButton());
             assertEquals("back", definition.exitButton().id());
             assertEquals(DialogDefinition.AfterAction.CLOSE.name(), DialogDefinition.AfterAction.CLOSE.name());
+        }
+
+        @Test
+        @DisplayName("the removed can_close_with_escape option is ignored with a warning, not an error")
+        void ignoresTheRemovedEscapeOption() {
+            final DialogDiagnostics diagnostics = new DialogDiagnostics();
+            final DialogDefinition definition = loader().parse(yaml("""
+                    id: legacy
+                    type: notice
+                    title: "x"
+                    options:
+                      can_close_with_escape: false
+                    buttons:
+                      - id: ok
+                        label: "OK"
+                    """), "legacy.yml", diagnostics);
+
+            // A file written for an older build must keep working: the option is reported and dropped,
+            // and escape follows the rule that actually holds - on, because there is no timer.
+            assertNotNull(definition, () -> "a removed option must not stop the dialog loading: "
+                    + diagnostics.all());
+            assertTrue(definition.canCloseWithEscape());
+
+            final DialogDiagnostic diagnostic = diagnostics.all().stream()
+                    .filter(d -> !d.isError())
+                    .filter(d -> d.path().contains("can_close_with_escape"))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("expected a warning, got: " + diagnostics.all()));
+
+            assertTrue(diagnostic.message().contains("no longer an option"));
+            assertTrue(diagnostic.hint().contains("refresh_interval"), "the hint must name the real rule");
         }
 
         @Test
@@ -1120,6 +1151,55 @@ class DialogLoaderTest {
             assertTrue(definition.refreshes());
             assertEquals(2, definition.refreshIntervalSeconds());
             assertEquals(60, definition.refreshMaxSeconds());
+            assertFalse(definition.canCloseWithEscape(),
+                    "a timer cannot know the player pressed escape, so escape is off while it runs");
+        }
+
+        @Test
+        @DisplayName("setting refresh_interval turns escape off on its own, with nothing to configure")
+        void timerTurnsEscapeOffAutomatically() {
+            final DialogDiagnostics diagnostics = new DialogDiagnostics();
+            final DialogDefinition definition = loader().parse(yaml("""
+                    id: live
+                    type: notice
+                    title: "x"
+                    options:
+                      refresh_interval: 2
+                    buttons:
+                      - id: ok
+                        label: "OK"
+                    """), "live.yml", diagnostics);
+
+            // Minecraft never reports escape, so a timer cannot tell that the player left and would
+            // keep re-opening a dialog they had dismissed. Escape is therefore switched off by the
+            // timer itself rather than by a second option that could contradict it.
+            assertNotNull(definition, () -> "expected a definition, got: " + diagnostics.all());
+            assertTrue(definition.refreshes());
+            assertFalse(definition.canCloseWithEscape());
+
+            assertTrue(diagnostics.isEmpty(),
+                    () -> "the pairing is automatic and must not need a warning: " + diagnostics.all());
+        }
+
+        @Test
+        @DisplayName("without a timer escape closes the dialog, and a [refresh] button is not a timer")
+        void refreshActionWithEscapeIsFine() {
+            final DialogDiagnostics diagnostics = new DialogDiagnostics();
+            final DialogDefinition definition = loader().parse(yaml("""
+                    id: button_refresh
+                    type: notice
+                    title: "x"
+                    buttons:
+                      - id: refresh
+                        label: "Refresh"
+                        actions:
+                          - type: refresh
+                    """), "button_refresh.yml", diagnostics);
+
+            assertNotNull(definition, () -> "button driven refresh needs no restriction: "
+                    + diagnostics.all());
+            assertTrue(definition.canCloseWithEscape());
+            assertFalse(definition.refreshes(), "a [refresh] action is not a timer");
         }
 
         @Test

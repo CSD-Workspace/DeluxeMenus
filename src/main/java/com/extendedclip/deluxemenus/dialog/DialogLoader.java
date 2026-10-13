@@ -330,19 +330,29 @@ public final class DialogLoader {
         final String externalTitle = readOptionalText(configuration, "external_title", sourceFile, id, diagnostics);
         final List<String> commands = parseCommands(configuration, sourceFile, id, diagnostics);
 
-        final boolean canCloseWithEscape = readBoolean(configuration, "options.can_close_with_escape",
-                true, sourceFile, id, diagnostics);
+        // Escape is not an option any more, because it is not a free choice: a refresh timer cannot
+        // coexist with it (see DialogDefinition#canCloseWithEscape). The key is still recognised so
+        // that a file written for an older build says what happened to it instead of failing silently.
+        if (configuration.contains("options.can_close_with_escape")) {
+            diagnostics.warning(sourceFile, id, "options.can_close_with_escape",
+                    "'can_close_with_escape' is no longer an option and was ignored.",
+                    "Escape follows 'refresh_interval' automatically: leave 'refresh_interval' out and "
+                            + "escape closes the dialog, set it and escape is turned off because the "
+                            + "timer would otherwise re-open a dialog the player had dismissed.");
+        }
+
         final boolean pause = readBoolean(configuration, "options.pause", false, sourceFile, id, diagnostics);
         final int columns = readInt(configuration, "options.columns", 2, 1, 1024, sourceFile, id, diagnostics);
 
-        // 0 disables refreshing, matching the "no more often than once a second" floor Paper needs to
-        // stay sane; the upper bound keeps a typo from becoming a day-long refresh loop.
+        // 0 disables refreshing. The upper bound keeps a typo from becoming a day-long refresh loop.
+        // Setting this is what turns escape off for the dialog; DialogDefinition derives the two from
+        // each other so they cannot drift apart.
         final int refreshIntervalSeconds = readInt(configuration, "options.refresh_interval", 0,
                 0, MAX_REFRESH_INTERVAL_SECONDS, sourceFile, id, diagnostics);
 
         int refreshMaxSeconds = DialogDefinition.DEFAULT_REFRESH_MAX_SECONDS;
 
-        if (configuration.contains("options.refresh_max_seconds")) {
+        if (refreshIntervalSeconds > 0 && configuration.contains("options.refresh_max_seconds")) {
             refreshMaxSeconds = readInt(configuration, "options.refresh_max_seconds",
                     DialogDefinition.DEFAULT_REFRESH_MAX_SECONDS, 1, MAX_REFRESH_INTERVAL_SECONDS,
                     sourceFile, id, diagnostics);
@@ -404,7 +414,6 @@ public final class DialogLoader {
                 .externalTitle(externalTitle)
                 .permission(permission)
                 .commands(commands)
-                .canCloseWithEscape(canCloseWithEscape)
                 .pause(pause)
                 .afterAction(afterAction)
                 .columns(columns)

@@ -2,6 +2,7 @@ package com.extendedclip.deluxemenus.dialog;
 
 import com.extendedclip.deluxemenus.DeluxeMenus;
 import com.extendedclip.deluxemenus.dialog.command.RegistrableDialogCommand;
+import com.extendedclip.deluxemenus.dialog.listener.DialogSessionListener;
 import com.extendedclip.deluxemenus.utils.DebugLevel;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -64,6 +65,10 @@ public final class DialogManager {
                 ? null
                 : plugin.getConfiguration().loadRequirements(configuration));
         this.service = new DialogService(plugin, registry, sessions);
+
+        // Ends a refresh session as soon as anything else takes over the player's screen, which is
+        // the half of the picture Minecraft's packet set does not report.
+        new DialogSessionListener(plugin, sessions).register();
     }
 
     /**

@@ -299,7 +299,7 @@ public class DialogCommand extends SubCommand {
         sendInfoLine(sender, "Buttons", definition.buttons().size()
                 + (definition.exitButton() == null ? "" : " + 1 exit"));
         sendInfoLine(sender, "Options", "columns=" + definition.columns()
-                + ", can_close_with_escape=" + definition.canCloseWithEscape()
+                + ", escape_closes=" + definition.canCloseWithEscape()
                 + ", pause=" + definition.pause()
                 + ", after_action=" + definition.afterAction().name().toLowerCase(Locale.ROOT));
         sendInfoLine(sender, "Refresh", definition.refreshes()

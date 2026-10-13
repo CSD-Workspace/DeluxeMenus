@@ -242,7 +242,6 @@ public final class DialogDefinition {
     private final String externalTitle;
     private final String permission;
     private final List<String> commands;
-    private final boolean canCloseWithEscape;
     private final boolean pause;
     private final AfterAction afterAction;
     private final int columns;
@@ -264,7 +263,6 @@ public final class DialogDefinition {
         this.externalTitle = builder.externalTitle;
         this.permission = builder.permission;
         this.commands = List.copyOf(builder.commands);
-        this.canCloseWithEscape = builder.canCloseWithEscape;
         this.pause = builder.pause;
         this.afterAction = builder.afterAction;
         this.columns = builder.columns;
@@ -364,10 +362,16 @@ public final class DialogDefinition {
     /**
      * Whether the viewer may dismiss the dialog with the escape key.
      *
-     * @return {@code true} when escape closes the dialog
+     * <p>This is not configurable, because it is not really a free choice. Minecraft reports a dialog
+     * button press and nothing else - there is no close event, no close packet, and a dialog is not a
+     * container - so a refresh timer cannot tell that the player pressed escape and would keep
+     * re-opening a dialog they had already dismissed. A timer is therefore only allowed on a dialog
+     * that has no invisible exit, which means escape is turned off exactly when a timer is on.</p>
+     *
+     * @return {@code true} when escape closes the dialog, which is whenever the dialog has no timer
      */
     public boolean canCloseWithEscape() {
-        return canCloseWithEscape;
+        return !refreshes();
     }
 
     /**
@@ -558,7 +562,6 @@ public final class DialogDefinition {
         private String externalTitle;
         private String permission;
         private List<String> commands = List.of();
-        private boolean canCloseWithEscape = true;
         private boolean pause = false;
         private AfterAction afterAction = AfterAction.CLOSE;
         private int columns = 2;
@@ -640,15 +643,6 @@ public final class DialogDefinition {
          */
         public @NotNull Builder commands(final @NotNull List<String> commands) {
             this.commands = commands;
-            return this;
-        }
-
-        /**
-         * @param canCloseWithEscape whether escape closes the dialog
-         * @return this builder
-         */
-        public @NotNull Builder canCloseWithEscape(final boolean canCloseWithEscape) {
-            this.canCloseWithEscape = canCloseWithEscape;
             return this;
         }
 
