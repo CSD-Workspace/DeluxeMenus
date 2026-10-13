@@ -69,6 +69,8 @@ public class DeluxeMenusCommand implements BasicCommand {
     }
 
     private void registerSubCommands() {
+        final DialogCommand dialogCommand = new DialogCommand(plugin);
+
         final List<SubCommand> commands = List.of(
                 new DumpCommand(plugin),
                 new ExecuteCommand(plugin),
@@ -77,7 +79,9 @@ public class DeluxeMenusCommand implements BasicCommand {
                 new MetaCommand(plugin),
                 new OpenCommand(plugin),
                 new RefreshCommand(plugin),
-                new ReloadCommand(plugin)
+                new ReloadCommand(plugin),
+                dialogCommand,
+                new OpenDialogCommand(plugin, dialogCommand)
         );
 
         for (final SubCommand subCommand : commands) {

@@ -1,0 +1,35 @@
+# DeluxeMenus example dialog - a confirmation.
+#
+# A confirmation dialog renders exactly two buttons: the first is "yes", the second is "no".
+#
+# Docs: https://github.com/HelpChat/DeluxeMenus/blob/main/docs/dialogs/README.md
+# Rename or delete this file freely; it is only written once, on a fresh install.
+
+id: warp_confirm
+type: confirmation
+title: "&6Confirm teleport"
+body:
+  - type: text
+    content: "You are about to teleport to &espawn&r in &e%player_world%&r."
+  - type: text
+    content: "&7You can cancel at any time."
+
+buttons:
+  - id: confirm
+    label: "&aTeleport"
+    tooltip: "&7Teleport to spawn now"
+    width: 150
+    # An ordered action list. Both the mapping form used here and the string form used
+    # below are accepted, and both understand <delay=..> and <chance=..>.
+    actions:
+      - type: sound
+        sound: "ENTITY_ENDERMAN_TELEPORT"
+      - type: message
+        message: "&aTeleporting to spawn..."
+
+  - id: cancel
+    label: "&cCancel"
+    tooltip: "&7Stay where you are"
+    width: 150
+    actions:
+      - "[message] &7Teleport cancelled."

@@ -1,15 +1,17 @@
 name: DeluxeMenus
-version: '${version}'
+version: "${version}"
 main: com.extendedclip.deluxemenus.DeluxeMenus
 description: All in one inventory menu system
-authors: [ HelpChat ]
-api-version: '1.20.6'
+authors: [HelpChat]
+# Native dialogs are a core feature of DeluxeMenus, so the declared API version matches the
+# compatibility floor enforced at runtime: Paper/Minecraft 1.21.7 and newer only.
+api-version: "1.21.7"
 
 dependencies:
   server:
     PlaceholderAPI:
       load: BEFORE
-      required: false
+      required: true
       join-classpath: true
     Vault:
       load: BEFORE
@@ -84,4 +86,19 @@ permissions:
     default: op
   deluxemenus.placeholdersfor.exempt:
     description: exempt from placeholders being parsed when targeted with /dm open <menu p:<player> for players with this permission
+    default: op
+  deluxemenus.dialog.open:
+    description: open a dialog with /dm dialog open <dialog> [player]
+    default: op
+  deluxemenus.dialog.open.others:
+    description: open a dialog for another player with /dm dialog open <dialog> <player>
+    default: op
+  deluxemenus.dialog.open.bypass:
+    description: open a dialog for a viewer skipping the dialog's own permission and open requirements
+    default: op
+  deluxemenus.dialog.list:
+    description: list the loaded dialogs with /dm dialog list
+    default: op
+  deluxemenus.dialog.admin:
+    description: inspect a loaded dialog with /dm dialog info <dialog>
     default: op

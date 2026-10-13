@@ -27,6 +27,21 @@ You can create GUI menus that open with custom commands that will show stats or 
 
 DeluxeMenus depends on [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/).
 
+## Requirements
+
+DeluxeMenus requires **Paper / Minecraft 1.21.7 or newer**. Native dialogs are a core feature and
+the API they are built on does not exist below that version, so the plugin disables itself with a
+clear message on 1.21.6 and older.
+
+## Native dialogs
+
+Alongside inventory menus, DeluxeMenus can show **native Minecraft dialogs** — notices,
+confirmations, multi-action prompts and forms with input controls. Dialogs are configured in their
+own files under `plugins/DeluxeMenus/gui_dialogs/` and opened with `/dm dialog open <dialog>`.
+
+See [docs/dialogs/README.md](docs/dialogs/README.md) for the full schema, supported dialog and input
+types, the action vocabulary, permissions, commands, reload semantics and limitations.
+
 ## Contribute
 If you would like to contribute towards DeluxeMenus should you take a look at our [Contributing file][contributing] for the ins and outs on how you can do that and what you need to keep in mind.
 

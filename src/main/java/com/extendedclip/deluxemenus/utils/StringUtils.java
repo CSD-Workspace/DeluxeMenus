@@ -21,6 +21,16 @@ public class StringUtils {
     private final static Pattern HEX_PATTERN = Pattern
             .compile("&(#[a-f0-9]{6})", Pattern.CASE_INSENSITIVE);
 
+    /**
+     * Matches the angle bracket hex form {@code <#rrggbb>}, plus the three digit shorthand
+     * {@code <#rgb>} that MiniMessage also accepts.
+     * <p>
+     * Only the hex form is matched: MiniMessage's named tags such as {@code <red>} or {@code <bold>}
+     * are left alone, so this cannot swallow a MiniMessage tag.
+     */
+    private static final Pattern BRACKET_HEX_PATTERN = Pattern
+            .compile("<#([a-f0-9]{6}|[a-f0-9]{3})>", Pattern.CASE_INSENSITIVE);
+
     private static final LegacyComponentSerializer SERIALIZER = LegacyComponentSerializer.builder()
             .character(SECTION_CHAR)
             .hexCharacter('#')
@@ -32,12 +42,19 @@ public class StringUtils {
      * Translates the ampersand color codes like '&7' to their section symbol counterparts like '§7'.
      * <br>
      * It also translates hex colors like '&#aaFF00' to their section symbol counterparts like '§x§a§a§F§F§0§0'.
+     * <br>
+     * Angle bracket hex colors are supported too, so '&lt;#ff5496&gt;' and '&lt;#f49&gt;' translate the same
+     * way. This is the form MiniMessage uses, which makes it the one most people reach for; the
+     * MiniMessage action types parse it natively and never pass through here, so this only adds the
+     * syntax to legacy colored text.
      *
      * @param input The string in which to translate the color codes.
      * @return The string with the translated colors.
      */
     @NotNull
     public static String legacyColor(@NotNull String input) {
+        input = translateBracketHex(input);
+
         final Matcher matcher = HEX_PATTERN.matcher(input);
         final StringBuilder builder = new StringBuilder();
 
@@ -58,6 +75,65 @@ public class StringUtils {
         }
 
         return new String(characters);
+    }
+
+    /**
+     * Rewrites {@code <#rrggbb>} and {@code <#rgb>} into the section symbol hex form.
+     *
+     * @param input the string to rewrite
+     * @return the rewritten string, unchanged when it contains no angle bracket hex color
+     */
+    private static @NotNull String translateBracketHex(final @NotNull String input) {
+        final Matcher matcher = BRACKET_HEX_PATTERN.matcher(input);
+
+        if (!matcher.find()) {
+            return input;
+        }
+
+        final StringBuilder builder = new StringBuilder();
+
+        do {
+            final String digits = matcher.group(1);
+            final String expanded = digits.length() == 3 ? expandShorthand(digits) : digits;
+            matcher.appendReplacement(builder, Matcher.quoteReplacement(sectionHex(expanded)));
+        } while (matcher.find());
+
+        matcher.appendTail(builder);
+
+        return builder.toString();
+    }
+
+    /**
+     * Expands the three digit shorthand {@code abc} into {@code aabbcc}, the same way CSS and
+     * MiniMessage do.
+     *
+     * @param digits the three hex digits
+     * @return the six digit form
+     */
+    private static @NotNull String expandShorthand(final @NotNull String digits) {
+        final StringBuilder expanded = new StringBuilder(digits.length() * 2);
+
+        for (final char character : digits.toCharArray()) {
+            expanded.append(character).append(character);
+        }
+
+        return expanded.toString();
+    }
+
+    /**
+     * Builds the section symbol representation of a six digit hex color.
+     *
+     * @param digits the six hex digits, without the leading {@code #}
+     * @return the section symbol form, for example {@code §x§f§f§5§4§9§6}
+     */
+    private static @NotNull String sectionHex(final @NotNull String digits) {
+        final StringBuilder replacement = new StringBuilder().append(SECTION_CHAR).append('x');
+
+        for (final char character : digits.toCharArray()) {
+            replacement.append(SECTION_CHAR).append(character);
+        }
+
+        return replacement.toString();
     }
 
     /**

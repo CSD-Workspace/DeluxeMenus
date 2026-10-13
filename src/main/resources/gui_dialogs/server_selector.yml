@@ -1,0 +1,54 @@
+# DeluxeMenus example dialog - a multi action prompt.
+#
+# A multi_action dialog renders one or more independent buttons, each with its own
+# ordered action list, plus an optional exit button rendered outside the grid.
+#
+# Docs: https://github.com/HelpChat/DeluxeMenus/blob/main/docs/dialogs/README.md
+# Rename or delete this file freely; it is only written once, on a fresh install.
+
+id: server_selector
+type: multi_action
+title: "&6Where would you like to go?"
+body:
+  - type: text
+    content: "&7Pick a destination."
+
+options:
+  columns: 3
+  can_close_with_escape: true
+  pause: false
+  after_action: close
+  # The exit button is a full button mapping, but it has no id requirements of its own
+  # beyond being unique within this dialog.
+  exit_button:
+    id: close
+    label: "&7Close"
+    width: 250
+
+buttons:
+  - id: survival
+    label: "&aSurvival"
+    tooltip: "&7The main world"
+    actions:
+      # 'spawn' is only an example; point this at a command your server actually has.
+      - type: player_command
+        command: "spawn"
+      - type: console_command
+        command: "say %player_name% is heading to survival"
+
+  - id: creative
+    label: "&bCreative"
+    tooltip: "&7Build freely"
+    actions:
+      - type: message
+        message: "&bCreative is not open yet."
+
+  - id: more_info
+    label: "&eMore info"
+    tooltip: "&7Open another dialog"
+    # Links to another dialog by id. The target goes through the normal open pipeline,
+    # so its own permission and open_requirements are checked for the player pressing
+    # this button. A dialog may never link to itself.
+    actions:
+      - type: open_dialog
+        dialog: welcome_notice

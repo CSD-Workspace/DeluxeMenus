@@ -1,6 +1,7 @@
 package com.extendedclip.deluxemenus.command.subcommand;
 
 import com.extendedclip.deluxemenus.DeluxeMenus;
+import com.extendedclip.deluxemenus.dialog.DialogManager;
 import com.extendedclip.deluxemenus.menu.Menu;
 import com.extendedclip.deluxemenus.utils.Messages;
 import org.bukkit.command.CommandSender;
@@ -60,16 +61,36 @@ public class ReloadCommand extends SubCommand {
         plugin.reload();
         Menu.unload(plugin);
         plugin.getConfiguration().loadGUIMenus();
+
+        // Dialogs are reloaded alongside menus. The registry is replaced in one step, so valid
+        // dialogs become active immediately and files that were deleted simply disappear; a broken
+        // file is reported without taking the rest down with it.
+        final DialogManager dialogManager = plugin.getDialogManager();
+        final DialogManager.LoadSummary dialogSummary = dialogManager == null ? null : dialogManager.load();
+
         plugin.sms(sender, Messages.RELOAD_SUCCESS);
 
         int gLoaded = Menu.getLoadedMenuSize();
 
         if (gLoaded == 1) {
             plugin.sms(sender, Messages.MENU_LOADED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement(String.valueOf(gLoaded)).build()));
+        } else {
+            plugin.sms(sender, Messages.MENUS_LOADED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement(String.valueOf(gLoaded)).build()));
+        }
+
+        if (dialogSummary == null) {
             return;
         }
 
-        plugin.sms(sender, Messages.MENUS_LOADED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement(String.valueOf(gLoaded)).build()));
+        if (dialogSummary.loaded() == 1) {
+            plugin.sms(sender, Messages.DIALOG_LOADED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement(String.valueOf(dialogSummary.loaded())).build()));
+        } else {
+            plugin.sms(sender, Messages.DIALOGS_LOADED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement(String.valueOf(dialogSummary.loaded())).build()));
+        }
+
+        if (dialogSummary.filesFailed() > 0) {
+            plugin.sms(sender, Messages.DIALOG_FILES_FAILED.message().replaceText(AMOUNT_REPLACER_BUILDER.replacement(String.valueOf(dialogSummary.filesFailed())).build()));
+        }
     }
 
     @Override

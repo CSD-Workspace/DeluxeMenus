@@ -20,6 +20,7 @@ public abstract class SubCommand {
     protected static final TextReplacementConfig.Builder VALUE_REPLACER_BUILDER = TextReplacementConfig.builder().matchLiteral("<value>");
     protected static final TextReplacementConfig.Builder NEW_VALUE_REPLACER_BUILDER = TextReplacementConfig.builder().matchLiteral("<new-value>");
     protected static final TextReplacementConfig.Builder TYPE_REPLACER_BUILDER = TextReplacementConfig.builder().matchLiteral("<type>");
+    protected static final TextReplacementConfig.Builder DIALOG_REPLACER_BUILDER = TextReplacementConfig.builder().matchLiteral("<dialog>");
 
     protected final DeluxeMenus plugin;
 

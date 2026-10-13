@@ -50,6 +50,10 @@ public enum Messages {
             .append(newline())
             .append(text(">", NamedTextColor.AQUA))
             .append(space().append(space()))
+            .append(text("/dm dialog <open/list/info> <dialog> [player]", NamedTextColor.WHITE))
+            .append(newline())
+            .append(text(">", NamedTextColor.AQUA))
+            .append(space().append(space()))
             .append(text("/dm reload [menu-name]", NamedTextColor.WHITE))),
 
     HELP_OP(PLUGIN_TITLE.message
@@ -75,6 +79,10 @@ public enum Messages {
             .append(text(">", NamedTextColor.AQUA))
             .append(space().append(space()))
             .append(text("/dm meta <player> <set/remove/add/subtract/list/show>", NamedTextColor.WHITE))
+            .append(newline())
+            .append(text(">", NamedTextColor.AQUA))
+            .append(space().append(space()))
+            .append(text("/dm dialog <open/list/info> <dialog> [player]", NamedTextColor.WHITE))
             .append(newline())
             .append(text(">", NamedTextColor.AQUA))
             .append(space().append(space()))
@@ -111,6 +119,7 @@ public enum Messages {
                     .append(text("is exempt from placeholder target arguments.", NamedTextColor.GRAY))),
 
     MUST_SPECIFY_PLAYER(text("You must specify a player to open a menu for!", NamedTextColor.RED)),
+    MUST_SPECIFY_PLAYER_DIALOG(text("You must specify a player to open a dialog for!", NamedTextColor.RED)),
     MENUS_ARE_PLAYER_ONLY(text("Menus can only be opened by players!", NamedTextColor.RED)),
     WRONG_ACTION_TYPE(text("Action type specified does not exist!", NamedTextColor.RED)),
     CHANCE_FAIL(text("The chance for this action determined the action should not execute!", NamedTextColor.RED)),
@@ -266,7 +275,53 @@ public enum Messages {
             .append(text(" for ", NamedTextColor.GRAY))
             .append(text("<player>", NamedTextColor.GREEN))
             .append(text(" switched to: ", NamedTextColor.GRAY))
-            .append(text("<new-value>", NamedTextColor.GREEN)));
+            .append(text("<new-value>", NamedTextColor.GREEN))),
+
+    // Dialog related messages
+    WRONG_USAGE_DIALOG_COMMAND(WRONG_USAGE_BASE.message
+            .append(text("/dm dialog <open|list|info> <dialog> [player]", NamedTextColor.GRAY))),
+    WRONG_USAGE_DIALOG_OPEN_COMMAND(WRONG_USAGE_BASE.message
+            .append(text("/dm dialog open <dialog> [player]", NamedTextColor.GRAY))),
+
+    INVALID_DIALOG(text("Could not find dialog:", NamedTextColor.RED)
+            .append(space())
+            .append(text("<dialog>", NamedTextColor.GOLD))
+            .append(text(".", NamedTextColor.RED))),
+    NO_DIALOGS_LOADED(text("There are no dialogs loaded!", NamedTextColor.RED)),
+    DIALOG_LOADED(text("<amount> dialog loaded...", NamedTextColor.YELLOW)),
+    DIALOGS_LOADED(text("<amount> dialogs loaded...", NamedTextColor.YELLOW)),
+    DIALOG_FILES_FAILED(text("<amount> dialog file(s) failed validation, see the console for details.", NamedTextColor.RED)),
+
+    DIALOG_OPENED(text("<dialog>", NamedTextColor.GOLD)
+            .append(space())
+            .append(text("opened for", NamedTextColor.GREEN))
+            .append(space())
+            .append(text("<player>", NamedTextColor.WHITE))),
+    DIALOG_NO_PERMISSION(text("The viewer does not have permission to open the dialog", NamedTextColor.RED)
+            .append(space())
+            .append(text("<dialog>", NamedTextColor.GOLD))
+            .append(text(".", NamedTextColor.RED))),
+    DIALOG_REQUIREMENTS_NOT_MET(text("The viewer does not meet the requirements to open the dialog", NamedTextColor.RED)
+            .append(space())
+            .append(text("<dialog>", NamedTextColor.GOLD))
+            .append(text(".", NamedTextColor.RED))),
+    DIALOG_RESPONSE_STALE(text("The dialog", NamedTextColor.RED)
+            .append(space())
+            .append(text("<dialog>", NamedTextColor.GOLD))
+            .append(space())
+            .append(text("has been reloaded since it was opened. Please open it again.", NamedTextColor.RED))),
+    DIALOG_UNSUPPORTED(text("Native dialogs are not available on this server version.", NamedTextColor.RED)),
+    DIALOG_OPEN_ERROR(text("The dialog", NamedTextColor.RED)
+            .append(space())
+            .append(text("<dialog>", NamedTextColor.GOLD))
+            .append(space())
+            .append(text("could not be opened. See the console for details.", NamedTextColor.RED))),
+    DIALOG_LIST_HEADER(PLUGIN_TITLE.message
+            .append(space())
+            .append(text("dialogs", NamedTextColor.WHITE))),
+    DIALOG_INFO_HEADER(PLUGIN_TITLE.message
+            .append(space())
+            .append(text("dialog", NamedTextColor.WHITE)));
 
 
     private static final Map<String, Messages> BY_NAME = new HashMap<>();

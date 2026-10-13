@@ -8,6 +8,7 @@ import com.extendedclip.deluxemenus.menu.options.MenuItemOptions;
 import com.extendedclip.deluxemenus.menu.options.CustomModelDataComponent;
 import com.extendedclip.deluxemenus.utils.DebugLevel;
 import com.extendedclip.deluxemenus.utils.ItemUtils;
+import com.extendedclip.deluxemenus.utils.RegistryUtils;
 import com.extendedclip.deluxemenus.utils.StringUtils;
 import com.extendedclip.deluxemenus.utils.VersionHelper;
 import com.google.common.collect.ImmutableMultimap;
@@ -341,8 +342,18 @@ public class MenuItem {
             final Optional<String> trimPatternName = this.options.trimPattern();
 
             if (trimMaterialName.isPresent() && trimPatternName.isPresent()) {
-                final TrimMaterial trimMaterial = Registry.TRIM_MATERIAL.match(holder.setPlaceholdersAndArguments(trimMaterialName.get()));
-                final TrimPattern trimPattern = Registry.TRIM_PATTERN.match(holder.setPlaceholdersAndArguments(trimPatternName.get()));
+                // Resolved through RegistryUtils rather than Registry#match, which is deprecated for
+                // removal and only understands a namespaced key. RegistryUtils accepts both a legacy
+                // name such as QUARTZ and a key such as minecraft:quartz, matching how pattern types
+                // are already resolved during config parsing.
+                final TrimMaterial trimMaterial = RegistryUtils.byNameOrKey(
+                        Registry.TRIM_MATERIAL,
+                        holder.setPlaceholdersAndArguments(trimMaterialName.get())
+                );
+                final TrimPattern trimPattern = RegistryUtils.byNameOrKey(
+                        Registry.TRIM_PATTERN,
+                        holder.setPlaceholdersAndArguments(trimPatternName.get())
+                );
 
                 if (trimMaterial != null && trimPattern != null) {
                     final ArmorTrim armorTrim = new ArmorTrim(trimMaterial, trimPattern);
@@ -417,7 +428,9 @@ public class MenuItem {
                     plugin.debug(
                             DebugLevel.HIGHEST,
                             Level.INFO,
-                            "Failed to add enchantment " + entry.getKey().getName() + " to item " + itemStack.getType()
+                            // Enchantment#getName is deprecated for removal; Keyed#getKey is the
+                            // supported replacement and reports the namespaced key.
+                            "Failed to add enchantment " + entry.getKey().getKey() + " to item " + itemStack.getType()
                     );
                 }
             }

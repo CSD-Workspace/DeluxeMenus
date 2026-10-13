@@ -1,0 +1,25 @@
+# DeluxeMenus example dialog - a notice.
+#
+# A notice dialog renders exactly one button.
+#
+# Docs: https://github.com/HelpChat/DeluxeMenus/blob/main/docs/dialogs/README.md
+# Rename or delete this file freely; it is only written once, on a fresh install.
+
+id: welcome_notice
+type: notice
+title: "&dWelcome, &f%player_name%&d!"
+body:
+  - type: text
+    content: "&7Thanks for installing &6Deluxe&eMenus&7!"
+    width: 250
+  - type: text
+    content: "&7Try &e/dm dialog list&7 to see every dialog you can open."
+    width: 250
+
+buttons:
+  - id: thanks
+    label: "&aGot it"
+    width: 150
+    actions:
+      - type: message
+        message: "&7Enjoy!"

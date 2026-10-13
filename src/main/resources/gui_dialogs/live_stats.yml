@@ -1,0 +1,62 @@
+# DeluxeMenus example dialog - a live, self refreshing display.
+#
+# options.refresh_interval re-renders and re-sends this dialog every N seconds, so the
+# placeholders below update while the player is looking at it. The same thing the [refresh]
+# action does on demand, driven by a timer.
+#
+# Two things to know before copying this into your own setup:
+#
+#  1. A dialog cannot be updated in place. Refreshing re-sends the whole dialog, which means
+#     the screen is redrawn and anything the player typed is cleared. Only refresh dialogs
+#     that display data - not forms. The plugin warns at load time if you do both.
+#  2. Minecraft never tells the server that a dialog was closed, so a refresh loop cannot know
+#     the player has dismissed it with escape. refresh_max_seconds is the hard limit on how
+#     long it keeps refreshing without any interaction; after that it stops.
+#
+# Docs: https://github.com/HelpChat/DeluxeMenus/blob/main/docs/dialogs/README.md
+# Rename or delete this file freely; it is only written once, on a fresh install.
+
+id: live_stats
+type: multi_action
+title: "&aYour stats"
+
+options:
+  columns: 2
+  can_close_with_escape: true
+  # Refresh every 2 seconds, and give up after 5 minutes with no interaction.
+  refresh_interval: 2
+  refresh_max_seconds: 300
+
+body:
+  - type: text
+    content: "&7Health: &c%player_health%&7/&c%player_max_health%"
+    width: 250
+  - type: text
+    content: "&7Food: &e%player_food_level%"
+    width: 250
+  - type: text
+    content: "&7Level: &a%player_level%"
+    width: 250
+  - type: text
+    content: "&7World: &b%player_world%"
+    width: 250
+  - type: text
+    content: "&8Updates by itself every 2 seconds."
+    width: 250
+
+buttons:
+  - id: refresh_now
+    label: "&bRefresh now"
+    tooltip: "&7Re-render immediately"
+    width: 150
+    actions:
+      # The same refresh the timer does, but on demand. The click in the client is sent
+      # immediately, so the value shown is always current to this moment.
+      - type: refresh
+
+  - id: close
+    label: "&7Close"
+    width: 150
+    actions:
+      # In a dialog [close] dismisses the dialog itself rather than an inventory.
+      - type: close

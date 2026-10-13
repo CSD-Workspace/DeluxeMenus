@@ -60,8 +60,8 @@ items:
   'teststone':
     #We will start to create a STONE item,
     material: STONE
-    # with a Block data set to 1, so that you can change stone type from STONE to GRANITE. More information about the block data can be checked through each items from Minecraft Wikipedia
-    data: 1
+    # with a damage value set to 1, so that you can change stone type from STONE to GRANITE. More information about the damage value of each item can be checked through each items from Minecraft Wikipedia
+    damage: 1
     # Slots that you want to put the item. Starts from 0
     slot: 0
     # Here we will name this item. You can change this at anytime. PlaceholderAPI & Color codes supported

@@ -5,6 +5,8 @@ import com.extendedclip.deluxemenus.command.DeluxeMenusCommand;
 import com.extendedclip.deluxemenus.config.DeluxeMenusConfig;
 import com.extendedclip.deluxemenus.config.GeneralConfig;
 import com.extendedclip.deluxemenus.cooldown.EphemeralCooldownManager;
+import com.extendedclip.deluxemenus.dialog.DialogManager;
+import com.extendedclip.deluxemenus.dialog.DialogSupport;
 import com.extendedclip.deluxemenus.dupe.DupeFixer;
 import com.extendedclip.deluxemenus.dupe.MenuItemMarker;
 import com.extendedclip.deluxemenus.hooks.*;
@@ -55,9 +57,19 @@ public class DeluxeMenus extends JavaPlugin {
 
     private final GeneralConfig generalConfig = new GeneralConfig(this);
     private DeluxeMenusConfig menuConfig;
+    private DialogManager dialogManager;
 
     @Override
     public void onEnable() {
+        // Native dialogs are a core feature, so the compatibility floor is enforced before anything
+        // else runs. This check must stay first: it is the only thing standing between an old server
+        // and a NoClassDefFoundError from the Paper dialog classes.
+        if (!DialogSupport.isSupported()) {
+            this.getLogger().severe(DialogSupport.unsupportedMessage(Bukkit.getBukkitVersion()));
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         this.generalConfig.load();
 
         if (!hookIntoPlaceholderAPI()) {
@@ -82,6 +94,11 @@ public class DeluxeMenus extends JavaPlugin {
             debug(DebugLevel.HIGHEST, Level.WARNING, "Failed to load from config.yml. Use /dm reload after fixing your errors.");
         }
 
+        // Dialogs are loaded from their own directory and never from gui_menus, so a broken menu
+        // file cannot stop dialogs from loading and vice versa.
+        this.dialogManager = new DialogManager(this);
+        this.dialogManager.load();
+
         new PlayerListener(this).register();
         registerMainCommand();
         new Expansion(this).register();
@@ -98,6 +115,10 @@ public class DeluxeMenus extends JavaPlugin {
         Bukkit.getScheduler().cancelTasks(this);
 
         Menu.unloadForShutdown(this);
+
+        if (this.dialogManager != null) {
+            this.dialogManager.shutdown();
+        }
 
         if (this.ephemeralCooldownManager != null) {
             this.ephemeralCooldownManager.clearAll();
@@ -169,6 +190,18 @@ public class DeluxeMenus extends JavaPlugin {
 
     public DeluxeMenusConfig getConfiguration() {
         return menuConfig;
+    }
+
+    /**
+     * The dialog subsystem, or {@code null} when the server did not pass the compatibility gate.
+     *
+     * <p>Callers must null-check: on an unsupported server the plugin disables itself before the
+     * manager is ever created.</p>
+     *
+     * @return the dialog manager, or {@code null}
+     */
+    public DialogManager getDialogManager() {
+        return dialogManager;
     }
 
     public VaultHook getVault() {
@@ -322,6 +355,7 @@ public class DeluxeMenus extends JavaPlugin {
     private void setUpMetrics() {
         final Metrics metrics = new Metrics(this, 445);
         metrics.addCustomChart(new SingleLineChart("menus", Menu::getLoadedMenuSize));
+        metrics.addCustomChart(new SingleLineChart("dialogs", () -> dialogManager == null ? 0 : dialogManager.registry().size()));
 
         metrics.addCustomChart(new AdvancedPie("inventory_types", () -> Menu.getAllMenus().stream()
                 .map(Menu::options)

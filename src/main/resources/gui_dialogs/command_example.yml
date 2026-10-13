@@ -1,0 +1,51 @@
+# DeluxeMenus example dialog - opened by its own command.
+#
+# 'open_command' registers a real server command that opens this dialog. The first entry is
+# the command itself and any remaining entries are aliases, exactly like a menu's
+# open_command. Declaring it is what opts in; there is no separate register_command flag.
+#
+# The command accepts an optional target player, just like /dm dialog open:
+#   /dmexample              opens it for you (the sender must be a player)
+#   /dmexample <player>     opens it for someone else, requires
+#                           deluxemenus.dialog.open.others
+#
+# It goes through the same pipeline as /dm dialog open, so deluxemenus.dialog.open, this
+# dialog's own 'permission' and its open_requirements all still apply.
+#
+# Docs: https://github.com/HelpChat/DeluxeMenus/blob/main/docs/dialogs/README.md
+# Rename or delete this file freely; it is only written once, on a fresh install.
+
+id: command_example
+type: multi_action
+title: "&6Opened by a command"
+open_command:
+  - dmexample
+  - dme
+
+body:
+  - type: text
+    content: "&7This dialog was opened with &e/dmexample&7, not with &e/dm dialog open&7."
+    width: 250
+  - type: text
+    content: "&7The command is declared by &fopen_command&7 in this file."
+    width: 250
+
+options:
+  columns: 2
+  can_close_with_escape: true
+
+buttons:
+  - id: understand
+    label: "&aI understand"
+    width: 150
+    actions:
+      - type: message
+        message: "&aThen you know how /dm dialog open and open_command relate."
+
+  - id: list_others
+    label: "&eOther dialogs"
+    tooltip: "&7Open the multi action example"
+    width: 150
+    actions:
+      - type: open_dialog
+        dialog: server_selector

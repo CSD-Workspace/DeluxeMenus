@@ -46,6 +46,12 @@ dependencies {
     implementation(libs.bstats)
 
     compileOnly("org.jetbrains:annotations:26.1.0")
+
+    testImplementation(libs.paper)
+    testImplementation(libs.papi)
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.snakeyaml)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 java {
@@ -58,6 +64,10 @@ java {
 tasks {
     withType<JavaCompile> {
         options.release.set(21)
+    }
+
+    test {
+        useJUnitPlatform()
     }
 
     shadowJar {

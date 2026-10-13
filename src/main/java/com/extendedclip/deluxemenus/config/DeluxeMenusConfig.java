@@ -52,6 +52,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -1182,6 +1183,20 @@ public class DeluxeMenusConfig {
         }
 
         return list;
+    }
+
+    /**
+     * Loads a requirement list for the dialog subsystem.
+     *
+     * <p>Dialogs reuse the exact same requirement engine as menus so that a requirement means the
+     * same thing in both places. The dialog loader reshapes its {@code open_requirements} list into
+     * the section layout this method expects, under the top level key {@code open_requirements}.</p>
+     *
+     * @param configuration the configuration holding an {@code open_requirements.requirements} section
+     * @return the resolved requirement list, or {@code null} when nothing usable was declared
+     */
+    public @Nullable RequirementList loadRequirements(final @NotNull FileConfiguration configuration) {
+        return getRequirements(configuration, "open_requirements");
     }
 
     private ClickHandler getClickHandler(FileConfiguration c, String configPath) {

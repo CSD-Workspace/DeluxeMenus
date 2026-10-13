@@ -1,0 +1,88 @@
+# DeluxeMenus example dialog - a form.
+#
+# A form dialog collects input from the player before running its button actions.
+# It requires at least one input and at least one button, and it uses every input
+# control the native dialog API exposes.
+#
+# Docs: https://github.com/HelpChat/DeluxeMenus/blob/main/docs/dialogs/README.md
+# Rename or delete this file freely; it is only written once, on a fresh install.
+
+id: feedback_form
+type: form
+title: "&6Send feedback"
+
+# Requirements reuse the exact engine menus use and are evaluated against the viewer.
+# Ops bypass Bukkit permission checks, so an operator can always open this example.
+# Remove this block, or grant 'deluxemenus.dialog.feedback', to let others open it.
+open_requirements:
+  - type: has permission
+    permission: "deluxemenus.dialog.feedback"
+
+body:
+  - type: text
+    content: "&7Your feedback helps improve the server."
+    width: 250
+
+inputs:
+  # A single line text field. max_length is enforced by the client and re-checked on
+  # the server before any action runs.
+  - id: subject
+    type: text
+    label: "&eSubject"
+    initial: ""
+    max_length: 64
+    min_length: 4
+    required: true
+
+  # A radio group. 'value' is what the actions below receive.
+  - id: category
+    type: single_option
+    label: "&eCategory"
+    required: true
+    options:
+      - label: "Bug report"
+        value: bug
+      - label: "Suggestion"
+        value: suggestion
+        initial: true
+
+  # A checkbox.
+  - id: anonymous
+    type: boolean
+    label: "&eSubmit anonymously"
+    initial: false
+    on_true: "yes"
+    on_false: "no"
+
+  # A numeric slider, inclusive on both ends.
+  - id: rating
+    type: number_range
+    label: "&eHow would you rate us?"
+    start: 1
+    end: 5
+    step: 1
+    initial: 3
+    required: true
+
+buttons:
+  - id: submit
+    label: "&aSubmit"
+    width: 150
+    actions:
+      # Submitted values are available to actions as {input_id}. They are scoped to this
+      # one response, never registered globally, never persisted and never logged.
+      - type: console_command
+        command: "say %player_name% rated us {rating}/5 ({category})"
+      - type: message
+        message: "&aThanks! Subject: &e{subject}&a, anonymous: &e{anonymous}"
+
+  - id: skip
+    label: "&7Not now"
+    width: 150
+    # 'skip' does not submit the form, so it opts out of input validation. Without this the
+    # empty required fields above would reject the press and re-open the form, leaving the
+    # player unable to leave through this button.
+    validate_inputs: false
+    actions:
+      - type: message
+        message: "&7Maybe later."
